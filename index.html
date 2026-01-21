@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Login & Job Application</title>
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>
+(function () {
+  emailjs.init("gdDT6lZUGGIT4X1EV");
+})();
+</script>
+
+<style>
+:root {
+  --primary: #667eea;
+  --secondary: #764ba2;
+}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background: #fff;
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  animation: fadeSlideIn 0.7s ease;
+}
+
+h2 { text-align: center; margin-bottom: 20px; }
+
+label {
+  display: block;
+  margin-top: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 11px;
+  margin: 5px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 13px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-top: 15px;
+  cursor: pointer;
+}
+
+button:disabled { background: #aaa; cursor: not-allowed; }
+
+.hidden { display: none; }
+
+/* Dropdown */
+.dropdown { position: relative; }
+.dropdown-btn {
+  padding: 11px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dropdown-content {
+  position: absolute;
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  z-index: 10;
+}
+.dropdown-content.show { max-height: 220px; }
+.dropdown-content label {
+  display: block;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.selected-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.skill-tag {
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: grab;
+}
+
+.mandatory {
+  color: red;
+  margin-left: 4px;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Login -->
+<div class="container" id="loginPage">
+  <h2>Login</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button type="button" onclick="login()">Login</button>
+</div>
+
+<!-- Job Application -->
+<div class="container hidden" id="formPage">
+  <h2>Job Application</h2>
+
+  <label>Full Name<span class="mandatory">*</span></label>
+  <input id="name" placeholder="Full Name" required>
+
+  <label>Email<span class="mandatory">*</span></label>
+  <input id="email" type="email" placeholder="Email" required>
+
+  <label>Mobile Number</label>
+  <input id="mobile" placeholder="Mobile Number">
+
+  <label>Qualification<span class="mandatory">*</span></label>
+  <input id="qualification" placeholder="Qualification" required>
+
+  <label>Current Location</label>
+  <input id="location" placeholder="Current Location">
+
+  <label>Job Profile</label>
+  <input id="jobProfile" placeholder="Job Profile">
+
+  <label>Experience<span class="mandatory">*</span></label>
+  <input id="experience" placeholder="Experience" required>
+
+  <label>Current Salary</label>
+  <input id="currentSalary" placeholder="Current Salary">
+
+  <label>Expected Salary</label>
+  <input id="expectedSalary" placeholder="Expected Salary">
+
+  <label>Preferred Location</label>
+  <input id="preferredLocation" placeholder="Preferred Location">
+
+  <strong>Top Skills (Optional)</strong>
+  <div class="dropdown">
+    <div class="dropdown-btn" onclick="toggleDropdown()">Select Skills</div>
+    <div class="dropdown-content" id="skillOptions">
+      <label><input type="checkbox" value="JavaScript"> JavaScript</label>
+      <label><input type="checkbox" value="Playwright"> Playwright</label>
+      <label><input type="checkbox" value="Selenium"> Selenium</label>
+      <label><input type="checkbox" value="MySQL"> MySQL</label>
+      <label><input type="checkbox" value="Postman"> Postman</label>
+      <label><input type="checkbox" value="JIRA"> JIRA</label>
+    </div>
+  </div>
+
+  <div class="selected-skills" id="selectedSkills"></div>
+
+  <button id="submitBtn" type="button" disabled onclick="sendEmail()">
+    Submit Application
+  </button>
+</div>
+
+<script>
+function login() {
+  if (username.value && password.value) {
+    loginPage.classList.add("hidden");
+    formPage.classList.remove("hidden");
+  } else {
+    alert("Enter username & password");
+  }
+}
+
+// Dropdown for skills
+const dropdown = document.getElementById("skillOptions");
+const selectedBox = document.getElementById("selectedSkills");
+let dragged;
+
+function toggleDropdown() {
+  dropdown.classList.toggle("show");
+}
+
+document.querySelectorAll("#skillOptions input").forEach(cb => {
+  cb.addEventListener("change", () => {
+    cb.checked ? addSkill(cb.value) : removeSkill(cb.value);
+    dropdown.classList.remove("show");
+  });
+});
+
+function addSkill(skill) {
+  if ([...selectedBox.children].some(s => s.innerText === skill)) return;
+
+  const tag = document.createElement("div");
+  tag.className = "skill-tag";
+  tag.innerText = skill;
+  tag.draggable = true;
+
+  tag.addEventListener("dragstart", () => dragged = tag);
+  tag.addEventListener("dragover", e => e.preventDefault());
+  tag.addEventListener("drop", e => {
+    e.preventDefault();
+    selectedBox.insertBefore(dragged, tag);
+  });
+
+  selectedBox.appendChild(tag);
+}
+
+function removeSkill(skill) {
+  [...selectedBox.children].forEach(t => {
+    if (t.innerText === skill) selectedBox.removeChild(t);
+  });
+}
+
+// ✅ Fix: Get mandatory fields by ID
+const nameField = document.getElementById("name");
+const emailField = document.getElementById("email");
+const qualificationField = document.getElementById("qualification");
+const experienceField = document.getElementById("experience");
+const submitBtn = document.getElementById("submitBtn");
+
+// Add event listener for mandatory fields
+[nameField, emailField, qualificationField, experienceField].forEach(i => 
+    i.addEventListener("input", checkForm)
+);
+
+function checkForm() {
+    const filled = [nameField, emailField, qualificationField, experienceField]
+        .every(i => i.value.trim() !== "");
+    submitBtn.disabled = !filled; // enable submit button if all mandatory fields filled
+}
+
+function sendEmail() {
+  const skills = [...selectedBox.children].map(s => s.innerText).join(", ");
+
+  emailjs.send("service_rn0my54", "template_2r7f1eo", {
+    name: nameField.value,
+    email: emailField.value,
+    mobile: document.getElementById("mobile").value,
+    qualification: qualificationField.value,
+    location: document.getElementById("location").value,
+    jobProfile: document.getElementById("jobProfile").value,
+    experience: experienceField.value,
+    currentSalary: document.getElementById("currentSalary").value,
+    expectedSalary: document.getElementById("expectedSalary").value,
+    preferredLocation: document.getElementById("preferredLocation").value,
+    skills: skills
+  })
+  .then(() => alert("Application submitted successfully!"))
+  .catch(err => {
+    console.error(err);
+    alert("Email failed");
+  });
+
+  return false;
+}
+</script>
+
+</body>
+</html>
